@@ -7,4 +7,7 @@ pub struct Parser {
 
     #[structopt(long = "min-similarity", default_value = "100")]
     pub match_threshold: u8,
+
+    #[structopt(long = "delete-files")]
+    pub delete_files: bool,
 }

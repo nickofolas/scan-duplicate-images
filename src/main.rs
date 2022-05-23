@@ -1,5 +1,10 @@
 use scan_duplicates::{compare_hashes, generate_hash, parser::Parser, Result as LazyResult};
-use std::{collections::HashMap, ffi::OsStr, fs::read_dir, path::PathBuf};
+use std::{
+    collections::HashMap,
+    ffi::OsStr,
+    fs::{read_dir, remove_file},
+    path::PathBuf,
+};
 use structopt::StructOpt;
 
 fn main() -> LazyResult<()> {
@@ -7,7 +12,7 @@ fn main() -> LazyResult<()> {
     let expanded = shellexpand::tilde(&args.source_dir);
 
     let mut hash_store: HashMap<PathBuf, usize> = HashMap::new();
-    let mut original_store: Vec<usize> = vec![];
+    let mut original_store: HashMap<usize, String> = HashMap::new();
     let mut duplicate_store: Vec<&PathBuf> = vec![];
 
     for entry_wrapped in read_dir(expanded.to_string())? {
@@ -30,18 +35,33 @@ fn main() -> LazyResult<()> {
     }
 
     for (path, hash) in &hash_store {
-        if original_store
-            .iter()
-            .any(|original_hash| compare_hashes(*original_hash, *hash) >= args.match_threshold)
-        {
+        if original_store.iter().any(|(original_hash, original_path)| {
+            let matches = compare_hashes(*original_hash, *hash) >= args.match_threshold;
+
+            return match matches {
+                true => {
+                    println!("{:?} matches \"{}\"", path, original_path);
+                    true
+                }
+                false => false,
+            };
+        }) {
             duplicate_store.push(path);
             continue;
         }
 
-        original_store.push(*hash);
+        original_store.insert(*hash, String::from(path.to_str().unwrap()));
     }
 
-    println!("{:?}", duplicate_store);
+    if args.delete_files {
+        let mut deleted: Vec<String> = vec![];
+        for path in &duplicate_store {
+            remove_file(*path)?;
+            deleted.push(String::from(path.to_str().unwrap()))
+        }
+
+        println!("\nFiles deleted:\n{}", deleted.join("\n"));
+    }
 
     Ok(())
 }
