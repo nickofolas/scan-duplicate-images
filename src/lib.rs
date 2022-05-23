@@ -1,18 +1,23 @@
+use std::path::Path;
+
+pub mod parser;
+
 pub type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;
 
 // Compare two hashes and return a percent similarity
-pub fn compare_hashes(hash1: usize, hash2: usize) -> Result<u8> {
+pub fn compare_hashes(hash1: usize, hash2: usize) -> u8 {
     let hash_xor = format!("{:#b}", (hash1 ^ hash2));
     let occurences: f64 = hash_xor.match_indices('1').count() as f64;
-    let result = (((64.0 - occurences) * 100.0) / 64.0) as u8;
-
-    Ok(result)
+    (((64.0 - occurences) * 100.0) / 64.0) as u8
 }
 
 // Takes the bytes of an image, then generates a hash from their pixels
-pub fn generate_hash(buffer: &[u8]) -> Result<usize> {
+pub fn generate_hash<P>(path: P) -> Result<usize>
+where
+    P: AsRef<Path>,
+{
     // Avoid panicking in unrecognized formats, return 0 for easy of ignoring
-    let image_original = match image::load_from_memory(buffer) {
+    let image_original = match image::open(path) {
         Ok(val) => val,
         Err(_err) => return Ok(0),
     };
