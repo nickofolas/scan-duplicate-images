@@ -1,5 +1,7 @@
 use std::path::Path;
 
+use image::GenericImageView;
+
 pub mod parser;
 
 pub type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;
@@ -27,10 +29,12 @@ where
         .resize_exact(8, 8, image::imageops::Lanczos3)
         .to_luma8();
 
-    // This is a lot of chained method calls, so here's a breakdown:
-    // - Get the image pixels, clone and map a closure on them that gets their value
-    // - Collect that into a Vec<u8>, then chunk that Vec<u8> into chunks of 8
-    // - Collect those chunks into a Vec<Vec<u8>>
+    /*
+    This is a lot of chained method calls, so here's a breakdown:
+    - Get the image pixels, clone and map a closure on them that gets their value
+    - Collect that into a Vec<u8>, then chunk that Vec<u8> into chunks of 8
+    - Collect those chunks into a Vec<Vec<u8>>
+    */
     let mut pixels: Vec<Vec<u8>> = img
         .pixels()
         .cloned()
@@ -55,6 +59,11 @@ where
         diff_hash |= (pixel >= prev_px) as usize;
         prev_px = pixel;
     }
+
+    diff_hash |= {
+        let (h, w) = image_original.dimensions();
+        (h * w) as usize
+    };
 
     Ok(diff_hash)
 }
