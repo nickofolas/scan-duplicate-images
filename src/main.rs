@@ -2,8 +2,9 @@ use scan_duplicates::{compare_hashes, generate_hash, parser::Parser, Result as L
 use std::{
     collections::HashMap,
     ffi::OsStr,
-    fs::{read_dir, remove_file},
+    fs::{read_dir, remove_file, write},
     path::PathBuf,
+    time::SystemTime,
 };
 use structopt::StructOpt;
 
@@ -61,6 +62,19 @@ fn main() -> LazyResult<()> {
         }
 
         println!("\nFiles deleted:\n{}", deleted.join("\n"));
+    }
+
+    if args.store_matches {
+        let save_string = duplicate_store
+            .iter()
+            .map(|path| path.to_str().unwrap().to_string())
+            .collect::<Vec<String>>()
+            .join("\n");
+
+        let timestamp = SystemTime::now()
+            .duration_since(SystemTime::UNIX_EPOCH)?
+            .as_secs();
+        write(format!("{}.txt", timestamp), save_string)?;
     }
 
     Ok(())

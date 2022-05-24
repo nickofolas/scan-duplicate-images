@@ -10,4 +10,7 @@ pub struct Parser {
 
     #[structopt(long = "delete-files")]
     pub delete_files: bool,
+
+    #[structopt(long = "store-matches")]
+    pub store_matches: bool,
 }
